@@ -1,54 +1,61 @@
 //index.js
+import regeneratorRuntime from '../../regenerator-runtime/runtime.js';
+
 //获取应用实例
 const app = getApp()
 
 Page({
   data: {
-    motto: 'Hello World',
-    userInfo: {},
-    hasUserInfo: false,
-    canIUse: wx.canIUse('button.open-type.getUserInfo')
+    colorList: {
+      "院科协": "bg-gradual-green", 
+      "院学生会": "bg-gradual-blue", 
+      "院红会": "bg-gradual-red", 
+      "院团委": "bg-gradual-purple", 
+      "院新媒体": "bg-gradual-orange", 
+      "院青协": "bg-gradual-pink"},
+    activityList: [],
+    statusBarHeight: app.globalData.statusBarHeight,
+    loader: true
   },
-  //事件处理函数
-  bindViewTap: function() {
+  onLoad(){
+    this.getActivity();
+  },
+  entryCard(e){
+    var activityID = this.data.activityList[e.currentTarget.id].id
+    var activityName = this.data.activityList[e.currentTarget.id].name
+    var color = this.data.colorList[this.data.activityList[e.currentTarget.id].publisher]
     wx.navigateTo({
-      url: '../logs/logs'
+      url: '../registration/registration?id=' + activityID + '&name=' + activityName + '&color=' + color,
     })
   },
-  onLoad: function () {
-    if (app.globalData.userInfo) {
+  async getActivity() {
+    let res = await new Promise((resolve, reject) => {
+      wx.request({
+        url: 'https://www.turing-cup.online/voteapp/activity',
+        method: 'GET',
+        success: ({ data }) => {
+          resolve(data)
+        },
+        fail: reject
+      })
+    })
+    if (res) {
       this.setData({
-        userInfo: app.globalData.userInfo,
-        hasUserInfo: true
+        activityList: res
       })
-    } else if (this.data.canIUse){
-      // 由于 getUserInfo 是网络请求，可能会在 Page.onLoad 之后才返回
-      // 所以此处加入 callback 以防止这种情况
-      app.userInfoReadyCallback = res => {
-        this.setData({
-          userInfo: res.userInfo,
-          hasUserInfo: true
-        })
-      }
+      this.setData({
+        loader: false
+      })
+      console.log(res)
     } else {
-      // 在没有 open-type=getUserInfo 版本的兼容处理
-      wx.getUserInfo({
-        success: res => {
-          app.globalData.userInfo = res.userInfo
-          this.setData({
-            userInfo: res.userInfo,
-            hasUserInfo: true
-          })
-        }
+      this.setData({
+        loader: false
       })
+      wx.showToast({
+        title: '网络异常，请刷新！',
+        icon: 'none'
+      })
+      console.log("没有成功")
     }
   },
-  getUserInfo: function(e) {
-    console.log(e)
-    app.globalData.userInfo = e.detail.userInfo
-    this.setData({
-      userInfo: e.detail.userInfo,
-      hasUserInfo: true
-    })
-  }
 })
